@@ -43,10 +43,11 @@
             position: absolute;
             bottom: 0;
             left: 0;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.493);
             border-style: solid;
             border-width: 1px;
             border-color: rgba(0, 0, 0, 0.2);
+            color: white;
             margin-left: 20px;
             font-family: Arial, sans-serif;
             overflow: auto;
@@ -95,7 +96,7 @@
             width: 100%;
             height: 10px;
             border-radius: 9px;  
-            background: #adabab;
+            background: #ffdfdf93;
             outline: none;
             opacity: 0.9;
             -webkit-transition: .2s;
@@ -120,10 +121,12 @@
             cursor: pointer;
             }
 
+
     </style>
 </head>
 
 <body>
+    
     <div id="map"></div>
     <div class='map-overlay' id='features'>
         <h2>United States Public Education funding per state (<span id='demo'></span>)</h2>
@@ -132,27 +135,26 @@
         </div>
     </div>
     <div class="slidecontainer">
-        <input type="range" min="2002" max="2020" value="2020" class="slider" id="myRange" onchange='showVal(this.value)' oninput="showVal(this.value)">
+        <input type="range" min="2002" max="2020" value="2020" class="slider" id="myRange">
       </div>
     <div class='map-overlay' id='legend'></div>
     <script>
         var rangeslider = document.getElementById("myRange");
-        
-        rangeslider.addEventListener("change", function() {
-            document.getElementById("myRange").textContent = rangeslider.value;
-            output.innerHTML = this.value;
-            output_var = output.innerHTML
-        });
-
         var output = document.getElementById("demo");
 
+    function run_code(){
         output.innerHTML = rangeslider.value;
         var output_var = output.innerHTML;
 
         rangeslider.oninput = function() {
+            document.getElementById("myRange").textContent = rangeslider.value;
             output.innerHTML = this.value;
-            output_var = output.innerHTML
+            var output_var = output.innerHTML
         }
+        geojsonFetch(output_var)
+        }
+
+        rangeslider.addEventListener('change', run_code())
 
         // initialize basemmap
         mapboxgl.accessToken =
@@ -165,14 +167,19 @@
         });
 
         // load data and add as layer
-        async function geojsonFetch() {
-            let response = await fetch('assets/merged_pupil_data.geojson');
+        async function geojsonFetch(year) {
+            console.log(year)
+            let response = await fetch('assets2/edu_data_' + year + '.geojson');
             let state_data = await response.json();
+
+            
+            
 
             map.on('load', function loadingData() {
                 map.addSource('state_data', {
                     type: 'geojson',
                     data: state_data
+                    
                 });
 
                 map.addLayer({
@@ -182,7 +189,7 @@
                     'paint': {
                         'fill-color': [
                             'step',
-                            ['get', output_var],
+                            ['get', 'data_spending'],
                             '#C12929',
                             5000.00,
                             '#C13329',
@@ -271,19 +278,18 @@
                     item.appendChild(value);
                     legend.appendChild(item);
                 });
-            });
-
-            map.on('mouseover', ({point}) => {
-                const state = map.queryRenderedFeatures(point, {
-                    layers: ['us_states-layer']
                 });
-                document.getElementById('text-description').innerHTML = state.length ?
-                    `<h3>${state[0].properties.NAME}</h3><p><strong><em>${state[0].properties.output_var}</strong> Dollars invested in public education</em></p>` :
-                    `<p>Select a state to find out the annual spending for education.</p><p>If you want to change a year use the slider below!</p>`;
-            });
-        }
 
-        geojsonFetch();
+                map.on('mousemove', ({point}) => {
+                    const state = map.queryRenderedFeatures(point, {
+                        layers: ['us_states-layer']
+                    });
+                    document.getElementById('text-description').innerHTML = state.length ?
+                        `<h3>${state[0].properties.NAME}</h3><p>$<strong><em>${state[0].properties.data_spending}</strong> Dollars invested in public education</em></p>` :
+                        `<p>Select a state to find out the annual spending for education.</p><p>If you want to change a year use the slider below!</p>`;
+                });
+            }
+
     </script>
 
 </body>
